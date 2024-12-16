@@ -14,8 +14,6 @@ state, _ = env.reset()
 acc_reward = 0
 terminated, truncated, counter = False, False, 0
 
-# Anfrage an Unity und Djano bearbeiten
-
 
 @csrf_exempt
 def run_taxi_view(request):
@@ -37,8 +35,6 @@ def run_taxi_view(request):
     global state, acc_reward, terminated, truncated, counter
 
     # Unity sendet eine GET-Anfrage
-    # Umgebung zurückgesetzt
-    # state des Spiels an Unity gesendet(integer und decoded)
     if request.method == 'GET':
         state, _ = env.reset()
         decoded_state = list(decode(state))
@@ -49,9 +45,6 @@ def run_taxi_view(request):
         return JsonResponse(initial_data)
 
     # Action von Unity zu Django gesendet
-    # hier bearbeitet
-    # basiert darauf beste Action schicken
-    # q values berechnen
     elif request.method == 'POST':
         try:
             data = json.loads(request.body)
@@ -63,55 +56,47 @@ def run_taxi_view(request):
             decoded_state = list(decode(state))
 
             q_values, _ = policy.model([state])
-            suggested_actions = []
-            for action in torch.topk(q_values, q_values.size(-1)).indices.tolist()[0]:
-                suggested_actions.append(action)
 
-            best_action = suggested_actions[0] if suggested_actions else None
+            # Determine function type
+            function_type = os.getenv('FUNCTION_TYPE', 'value')
 
-            # WICHTIG:
+            if function_type == "value":
+                # calculate value function 
+                max_q_values = np.zeros((5, 5))
+                for x in range(5):
+                    for y in range(5):
+                        modified_state = decode(state)
+                        modified_state[0] = y
+                        modified_state[1] = x
+                        encoded_state = encode(modified_state)
+                        q_value, _ = policy.model(
+                            torch.tensor([encoded_state]))
+                        max_q_values[x, y] = q_value.max().item()
 
-            # Aktionen als eine Liste definieren
-            # jede Aktion wird zu einem Integer zugewiesen
-            action_names = ["up", "down", "right", "left",
-                            "pickup passenger", "drop off passenger"]
-            if best_action == 0:
-                best_action_name = action_names[1]
-            elif best_action == 1:
-                best_action_name = action_names[0]
-            elif best_action == 2:
-                best_action_name = action_names[2]
-            elif best_action == 3:
-                best_action_name = action_names[3]
-            elif best_action == 4:
-                best_action_name = action_names[4]
-            elif best_action == 5:
-                best_action_name = action_names[5]
+                max_q_values_normalized = (
+                    max_q_values - np.min(max_q_values)) / (np.max(max_q_values) - np.min(max_q_values))
+                max_q_values_normalized = max_q_values_normalized.flatten().tolist()
+
+            # calculate advantage function I(s)
+            elif function_type == "advantage":
+                # Compute the advantage function I(s)
+                max_q = q_values.max().item()
+                min_q = q_values.min().item()
+                i_s = max_q - min_q
+
+                max_q_values_normalized = np.full((5, 5), i_s)
+                max_q_values_normalized = max_q_values_normalized.flatten().tolist() 
+
             else:
-                best_action_name = "unknown"
+                return JsonResponse({'error': 'Invalid function type'}, status=400)
 
-            # q values
-            max_q_values = np.zeros((5, 5))
-            for x in range(5):
-                for y in range(5):
-                    modified_state = decode(state)
-                    modified_state[0] = y
-                    modified_state[1] = x
-                    encoded_state = encode(modified_state)
-                    q_value, _ = policy.model(torch.tensor([encoded_state]))
-                    max_q_values[x, y] = q_value.max().item()
-
-            max_q_values_normalized = (
-                max_q_values - np.min(max_q_values)) / (np.max(max_q_values) - np.min(max_q_values))
-            max_q_values_normalized_flatt = max_q_values_normalized.flatten().tolist()
-            
             response_data = {
                 'state': state,
                 'decoded_state': decoded_state,
                 'reward': reward,
-                'best_action': best_action,
-                'best_action_name': best_action_name,
-                'max_q_values_normalized': max_q_values_normalized_flatt
+                'max_q_values_normalized': max_q_values_normalized,
+                # indicates which function get used
+                'function_type': function_type
             }
             return JsonResponse(response_data)
 

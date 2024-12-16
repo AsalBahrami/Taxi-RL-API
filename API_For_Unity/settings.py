@@ -32,6 +32,14 @@ if os.getcwd() == '/app':
 
 ALLOWED_HOSTS = []
 
+
+'''
+FUNCTION_TYPE to switch between value and advantage function 
+NOTE: default is value function 
+'''
+FUNCTION_TYPE = os.getenv("FUNCTION_TYPE", "value")
+
+
 #   # related to app, login component withCredentials
 # CORS_ALLOWED_ORIGINS = [
 #     'http://localhost:3000',  # address of frontend TODO: add it to .env
@@ -47,6 +55,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'app_for_unity',
 ]
 
 MIDDLEWARE = [

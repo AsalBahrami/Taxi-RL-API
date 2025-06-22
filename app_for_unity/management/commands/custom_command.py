@@ -11,9 +11,9 @@ class Command(RunserverCommand):
         parser.add_argument(
             '--function_type',
             type=str,
-            choices=['value', 'advantage'],
+            choices=['value', 'i_function', 'q_value', 'advantage'],
             default='value',
-            help="specify whether to compute 'value' or 'advantage' function.",
+            help="Specify whether to compute 'value', 'i_function', 'q_value', or 'advantage'.",
         )
 
     def handle(self, *args, **options):

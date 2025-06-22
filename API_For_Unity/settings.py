@@ -32,6 +32,12 @@ if os.getcwd() == '/app':
 
 ALLOWED_HOSTS = []
 
+# CSRF_TRUSTED_ORIGINS = [
+#     "http://127.0.0.1:8000",
+#     "http://localhost:8000",
+# ]
+# CSRF_COOKIE_HTTPONLY = False
+
 
 '''
 FUNCTION_TYPE to switch between value and advantage function 
@@ -73,10 +79,12 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'API_For_Unity.urls'
 
+TEMPLATE_DIR = os.path.join(BASE_DIR,"templates")
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [TEMPLATE_DIR],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -88,6 +96,8 @@ TEMPLATES = [
         },
     },
 ]
+
+
 
 WSGI_APPLICATION = 'API_For_Unity.wsgi.application'
 
@@ -138,6 +148,8 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
